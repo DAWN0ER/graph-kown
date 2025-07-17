@@ -6,7 +6,8 @@ interface DataDto {
 }
 
 interface NodeDto extends DataDto {
-    linksOut: LinkDto[]
+    linksOut: LinkDto[];
+    linksIn: LinkDto[];
 }
 
 interface LinkDto extends DataDto {
@@ -17,15 +18,18 @@ interface LinkDto extends DataDto {
 interface GroupDto<D extends DataDto> {
     id: string;
     style: any;
+    parent:GroupDto<D>;
     children: GroupDto<D>[] | D[];
 }
 
-// 叶子节点
+// 非叶子节点也可能有这个
 interface LinkGroup extends GroupDto<LinkDto> {
     sourceGroup?: NodeGroup;
     targetGroup?: NodeGroup;
 }
 
+// 叶子节点
 interface NodeGroup extends GroupDto<NodeDto> {
-    linkGroups?: LinkGroup[];
+    linkOutGroups?: LinkGroup[];
+    linkInGroups?: LinkGroup[];
 }
