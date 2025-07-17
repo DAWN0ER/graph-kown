@@ -18,7 +18,7 @@ interface LinkDto extends DataDto {
 interface GroupDto<D extends DataDto> {
     id: string;
     style: any;
-    parent:GroupDto<D>;
+    parentGroup?:GroupDto<D>;
     children: GroupDto<D>[] | D[];
 }
 

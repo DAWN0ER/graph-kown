@@ -14,9 +14,11 @@ interface Node {
 
 interface Link {
     id:string,
+    content:string,
+    labels: string[],
+    group:string,
     source:string,
     target:string,
-    labels: string[],
 }
 
 interface Group {
@@ -25,4 +27,8 @@ interface Group {
     children: Group[] | string[],
     sourceGroup?: string
     targetGroup?: string
+}
+
+export type{
+    Node,Link,Data,Group
 }
