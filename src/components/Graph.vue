@@ -38,7 +38,8 @@ onMounted(() => {
     draw.value = new ForceGraph(graphContainer.value)
         .backgroundColor("#ffffff")
         .width(graphContainer.value.clientWidth)
-        .height(graphContainer.value.offsetHeight).nodeVal(25)
+        .height(graphContainer.value.clientHeight)
+        .nodeVal(25)
         .linkWidth(10).linkColor("#8B5CF6")
         .nodeCanvasObject(textBoxConfig);
     // force
@@ -89,10 +90,7 @@ const dealDel = (ns: string[], ls: string[]) => {
 <style scoped>
 .force-graph-container {
     width: 100%;
-    position: relative;
-}
-
-canvas {
-    z-index: 10;
+    height: 100%;
+   flex: auto;
 }
 </style>
