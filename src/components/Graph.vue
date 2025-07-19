@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, shallowRef } from 'vue';
+import { onMounted, ref, shallowRef, watch } from 'vue';
 import ForceGraph from 'force-graph';
 import type { NodeVo, LinkVo } from '../types/render.types';
 import { useDataSotre } from '../stores/data';
@@ -50,14 +50,14 @@ onMounted(() => {
 
     store.registerHook(dealAdd, "add");
     store.registerHook(dealDel, "del");
+});
 
-    store.loadData().then(() => {
-        console.log("load finish")
+watch(()=>store.change ,(val:number)=>{
+    console.log("load finish")
         const { ns, ls } = store.initGraphData();
         for (let n of ns) nodes.set(n.id, n);
         for (let l of ls) links.set(l.id, l);
         refresh();
-    });
 });
 
 const refresh = () => {

@@ -7,6 +7,7 @@ interface Data {
 
 interface Node {
     id:string,
+    viewName:string,
     content:string,
     group:string,
     labels: string[],
@@ -23,7 +24,7 @@ interface Link {
 
 interface Group {
     id: string,
-    style: any,
+    description: string,
     children: Group[] | string[],
     sourceGroup?: string
     targetGroup?: string

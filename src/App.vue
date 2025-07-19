@@ -5,7 +5,7 @@
                 <a-layout-header :class="['header']">
                     <HeadUI />
                 </a-layout-header>
-                <a-layout hasSider="true" style="background-color: transparent;">
+                <a-layout :hasSider="true" style="background-color: transparent;">
                     <a-layout-sider collapsible defaultCollapsed :collapsedWidth="0" width="300"
                         :zeroWidthTriggerStyle="{ top: '5px' }" :class="['clickable', 'sider']" :theme="'light'"
                         @collapse="changeFlag">
