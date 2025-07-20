@@ -4,17 +4,18 @@
             @tabChange="(key: string) => { tab = key }">
             <template #actions>
                 <a-bottun v-if="tab !== 'edit'" @click="tab = 'edit'">修改</a-bottun>
+                <a-bottun v-if="tab !== 'edit'" @click="console.log('删除功能还没做！')">删除</a-bottun>
             </template>
             <!-- 不同tab有不同内容 -->
             <a-descriptions v-if="tab === 'info'" :title="`ID: ${alllInfo.type}-${alllInfo.id}`" :column="1"
                 size="small">
-                <a-descriptions-item v-if="alllInfo.type === 'Node'" label="显示名称">{{ alllInfo.id
+                <a-descriptions-item v-if="alllInfo.type === 'node'" label="显示名称">{{ alllInfo.id
                 }}</a-descriptions-item>
                 <a-descriptions-item label="描述内容">{{ alllInfo.content }}</a-descriptions-item>
                 <a-descriptions-item label="组织节点">{{ alllInfo.groupId }}</a-descriptions-item>
-                <a-descriptions-item v-if="alllInfo.type === 'Node'" label="出度">{{ alllInfo.linksOut
+                <a-descriptions-item v-if="alllInfo.type === 'node'" label="出度">{{ alllInfo.linksOut
                     }}</a-descriptions-item>
-                <a-descriptions-item v-if="alllInfo.type === 'Node'" label="入度">{{ alllInfo.LinksIn
+                <a-descriptions-item v-if="alllInfo.type === 'node'" label="入度">{{ alllInfo.LinksIn
                     }}</a-descriptions-item>
                 <a-descriptions-item v-if="alllInfo.type === 'link'" label="起点ID">{{ alllInfo.source
                     }}</a-descriptions-item>
@@ -60,9 +61,12 @@
 </template>
 
 <script setup lang="tsx">
-import { reactive, ref, watch } from 'vue';
+import { useDataSotre } from '@/stores/data';
+import { json } from 'd3';
+import { computed, reactive, ref, watch } from 'vue';
 
 const tab = ref('info');
+const store = useDataSotre();
 
 const tabList = [
     {
@@ -76,7 +80,7 @@ const tabList = [
 ];
 
 interface Info {
-    type: "Node" | "link" | "--",
+    type: "node" | "link" | "--",
     id: string,
     name: string,
     content: string,
@@ -105,12 +109,28 @@ const emptyInfo: Info = {
 }
 
 // 显示用的数据
-const alllInfo = reactive<Info>(JSON.parse(JSON.stringify(emptyInfo)));
+const alllInfo = computed(()=>{
+    const res:Info = JSON.parse(JSON.stringify(emptyInfo));
+    if(store.current.id==='--'){
+        return res;
+    }
+    res.type = store.current.type;
+    res.id = store.current.id;
+    if(res.type === 'link'){
+        const v = store.getLinkV(res.id);
+        res.source = v.source;
+        res.target = v.target;
+    } else {
+        const v = store.getNodeV(res.id);
+        res.groupId
+    }
+    return res;
+});
 
 /**
  * {
  *  title 显示名称
- *  key 唯一索引 GourpId
+ *  key GourpId
  *  children 子节点
  *  selectable 是否可选择
  *  isLeaf loadData 的时候用暂时没用
@@ -118,7 +138,7 @@ const alllInfo = reactive<Info>(JSON.parse(JSON.stringify(emptyInfo)));
  */
 const groupTree = [
     {
-        title: 'parent 1',
+        title: '根节点',
         key: '0-0',
         children: [
             {

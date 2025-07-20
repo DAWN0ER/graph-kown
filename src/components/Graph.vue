@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, shallowRef, watch } from 'vue';
+import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import ForceGraph from 'force-graph';
 import type { NodeVo, LinkVo } from '../types/render.types';
 import { useDataSotre } from '../stores/data';
@@ -48,8 +48,29 @@ onMounted(() => {
     draw.value.d3Force('link', d3.forceLink().strength(0.1));
     draw.value.d3Force("charge", d3.forceManyBody().strength(20).theta(0.8).distanceMin(100));
 
+    draw.value.onNodeClick((node,event)=>{
+        store.current={
+            type:'node',
+            id:(node as NodeVo).id
+        }
+        console.log(store.current)
+    })
+    draw.value.onLinkClick((link,event)=>{
+        store.current={
+            type:'link',
+            id:(link as LinkVo).id
+        }
+        console.log(store.current)
+    })
+
     store.registerHook(dealAdd, "add");
     store.registerHook(dealDel, "del");
+});
+
+onUnmounted(()=>{
+    store.unregisterHook(dealAdd, "add");
+    store.unregisterHook(dealDel, "del");
+    draw.value = null;
 });
 
 watch(()=>store.change ,(val:number)=>{

@@ -20,7 +20,7 @@ interface GroupDto<D extends DataDto> {
     id: string;
     description: string;
     parentGroup?:GroupDto<D>;
-    children: GroupDto<D>[] | D[];
+    children: GroupDto<D>[] | D[]; // 当children 是 D[] 的时候是叶子节点
 }
 
 // 叶子节点必须有的属性
@@ -33,4 +33,12 @@ interface LinkGroup extends GroupDto<LinkDto> {
 interface NodeGroup extends GroupDto<NodeDto> {
     linkOutGroups?: LinkGroup[];
     linkInGroups?: LinkGroup[];
+}
+
+export type {
+    NodeDto,
+    LinkDto,
+    GroupDto,
+    LinkGroup,
+    NodeGroup,
 }
