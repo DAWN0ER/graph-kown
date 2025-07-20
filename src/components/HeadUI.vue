@@ -8,15 +8,15 @@
             <a-button shape="round" type="primary">编辑节点组</a-button>
             <a-button shape="round" type="primary">编辑链接组</a-button>
         </a-space-compact>
-        <a-button shape="round" type="default" @click="fileInput?.click()">{{ btnText }}</a-button>
+        <a-button shape="round" type="default" @click="fileInput?.click()" :disabled="btnText!=='上传文件'">{{ btnText }}</a-button>
         <input ref="fileInput" @change="click" style="display:none;" type="file" id="jsonFileInput" accept=".json">
+        
         <a-button type="primary" @click="save">保存</a-button>
         <!-- 测试下拉菜单 -->
-        <a-dropdown :open="dropdownVisible" @openChange="handleVisibleChange" :trigger="['click']">
+        <a-dropdown :open="dropdownVisible" @openChange="handleVisibleChange" :trigger="['click']" placement="bottom">
             <a-button type="primary" slot="trigger" @click.prevent>
                 打开下拉表单
             </a-button>
-
             <!-- 下拉内容：表单 -->
             <template #overlay>
                 <ElementForm :formMode="'addLink'"/>

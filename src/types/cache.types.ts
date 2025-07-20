@@ -18,6 +18,7 @@ interface LinkDto extends DataDto {
 
 interface GroupDto<D extends DataDto> {
     id: string;
+    label: string;
     description: string;
     parentGroup?:GroupDto<D>;
     children: GroupDto<D>[] | D[]; // 当children 是 D[] 的时候是叶子节点

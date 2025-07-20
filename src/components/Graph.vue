@@ -19,7 +19,7 @@ const links = new Map<string, LinkVo>();
 const draw = shallowRef<ForceGraph | null>(null);
 
 const textBoxConfig = (node: any, ctx: any, globalScale: any) => {
-    const text = node.content;
+    const text = node.viewName;
     drawTextBox(ctx, {
         padding: 5 / globalScale,
         text: text,
@@ -53,14 +53,14 @@ onMounted(() => {
             type:'node',
             id:(node as NodeVo).id
         }
-        console.log(store.current)
+        // console.log(store.current)
     })
     draw.value.onLinkClick((link,event)=>{
         store.current={
             type:'link',
             id:(link as LinkVo).id
         }
-        console.log(store.current)
+        // console.log(store.current)
     })
 
     store.registerHook(dealAdd, "add");

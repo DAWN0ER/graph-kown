@@ -2,48 +2,46 @@
     <div style="padding-left: 5px; padding-top: 5px; padding-right: 2px;">
         <a-card hoverable style="width: 100%; height: 70%;" :tab-list="tabList" :active-tab-key="tab" :title="'信息面板'"
             @tabChange="(key: string) => { tab = key }">
-            <template #actions>
-                <a-bottun v-if="tab !== 'edit'" @click="tab = 'edit'">修改</a-bottun>
-                <a-bottun v-if="tab !== 'edit'" @click="console.log('删除功能还没做！')">删除</a-bottun>
+            <template v-if="viewInfo.type!=='--'" #actions>
+                <a-space-compact>
+                    <a-button v-if="tab !== 'edit'" shape="round" type="primary" @click="tab = 'edit'">修改</a-button>
+                    <a-button v-if="tab !== 'edit'" shape="round" @click="console.log('删除功能还没做！')">删除</a-button>
+                </a-space-compact>
             </template>
             <!-- 不同tab有不同内容 -->
-            <a-descriptions v-if="tab === 'info'" :title="`ID: ${alllInfo.type}-${alllInfo.id}`" :column="1"
+            <a-descriptions v-if="tab === 'info'" :title="`ID: ${viewInfo.type}-${viewInfo.id}`" :column="1"
                 size="small">
-                <a-descriptions-item v-if="alllInfo.type === 'node'" label="显示名称">{{ alllInfo.id
+                <a-descriptions-item v-if="viewInfo.type === 'node'" label="显示名称">{{ viewInfo.name
+                    }}</a-descriptions-item>
+                <a-descriptions-item label="描述内容">{{ viewInfo.content }}</a-descriptions-item>
+                <a-descriptions-item label="组织节点">{{ viewInfo.groupId }}</a-descriptions-item>
+                <a-descriptions-item v-if="viewInfo.type === 'link'" label="起点ID">{{ viewInfo.source
                 }}</a-descriptions-item>
-                <a-descriptions-item label="描述内容">{{ alllInfo.content }}</a-descriptions-item>
-                <a-descriptions-item label="组织节点">{{ alllInfo.groupId }}</a-descriptions-item>
-                <a-descriptions-item v-if="alllInfo.type === 'node'" label="出度">{{ alllInfo.linksOut
-                    }}</a-descriptions-item>
-                <a-descriptions-item v-if="alllInfo.type === 'node'" label="入度">{{ alllInfo.LinksIn
-                    }}</a-descriptions-item>
-                <a-descriptions-item v-if="alllInfo.type === 'link'" label="起点ID">{{ alllInfo.source
-                    }}</a-descriptions-item>
-                <a-descriptions-item v-if="alllInfo.type === 'link'" label="终点ID">{{ alllInfo.target
-                    }}</a-descriptions-item>
+                <a-descriptions-item v-if="viewInfo.type === 'link'" label="终点ID">{{ viewInfo.target
+                }}</a-descriptions-item>
             </a-descriptions>
-            <a-descriptions v-if="tab === 'org'" :title="alllInfo.groupId" :column="1" :expandedKeys="alllInfo.groupId">
+            <a-descriptions v-if="tab === 'org'" :title="viewInfo.groupId" :column="1" :expandedKeys="viewInfo.groupId">
                 <a-descriptions-item label="描述">
-                    {{ alllInfo.groupDescription }}
+                    {{ viewInfo.groupDescription }}
                 </a-descriptions-item>
                 <a-descriptions-item>
-                    <a-tree :selectable="false" :checkable="false" show-line :tree-data="groupTree">
+                    <a-tree :selectable="false" :checkable="false" show-line :tree-data="viewGroupTree" :expandedKeys="expandedKeys">
                         <template #title="{ title, key }">
                             {{ title }}
                         </template>
                     </a-tree>
                 </a-descriptions-item>
             </a-descriptions>
-            <!-- 修改表单 -->
-            <a-form v-if="tab === 'edit'" :model="alllInfo">
+            <!-- 修改表单 以后会搬迁到主键里面去 -->
+            <a-form v-if="tab === 'edit'" :model="viewInfo">
                 <a-form-item label="显示名称">
-                    <a-input v-model:value="alllInfo.name" />
+                    <a-input v-model:value="viewInfo.name" />
                 </a-form-item>
                 <a-form-item label="描述内容">
-                    <a-input v-model:value="alllInfo.content" />
+                    <a-input v-model:value="viewInfo.content" />
                 </a-form-item>
                 <a-form-item label="组织节点">
-                    <a-tree-select v-model:value="alllInfo.groupId" show-search style="width: 100%"
+                    <a-tree-select v-model:value="viewInfo.groupId" show-search style="width: 100%"
                         :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }" placeholder="Please select" treeLine
                         allow-clear tree-default-expand-all :tree-data="selectGroupTree">
                         <template #title="{ value: val, label }">
@@ -62,8 +60,9 @@
 
 <script setup lang="tsx">
 import { useDataSotre } from '@/stores/data';
-import { json } from 'd3';
-import { computed, reactive, ref, watch } from 'vue';
+import type { Link, Node } from '@/types/data.types';
+import { convertGroup } from '@/utils/common.utils';
+import { computed, ref } from 'vue';
 
 const tab = ref('info');
 const store = useDataSotre();
@@ -84,11 +83,10 @@ interface Info {
     id: string,
     name: string,
     content: string,
+    // group
     groupId: string,
+    groupLabel: string,
     groupDescription: string,
-    // Node
-    linksOut: number,
-    LinksIn: number,
     // Link
     source: string,
     target: string,
@@ -102,110 +100,69 @@ const emptyInfo: Info = {
     content: '暂无',
     groupId: '--',
     groupDescription: '暂无组织节点描述',
-    linksOut: 0,
     source: '--',
     target: '--',
-    LinksIn: 0
+    groupLabel: 'Unkonwn'
 }
 
-// 显示用的数据
-const alllInfo = computed(()=>{
-    const res:Info = JSON.parse(JSON.stringify(emptyInfo));
-    if(store.current.id==='--'){
+// 显示用的数据，依赖current的指定，如果node或者link有变更也需要重算
+const viewInfo = computed(() => {
+    const res: Info = JSON.parse(JSON.stringify(emptyInfo));
+    if (store.current.id === '--') {
         return res;
     }
     res.type = store.current.type;
     res.id = store.current.id;
-    if(res.type === 'link'){
-        const v = store.getLinkV(res.id);
-        res.source = v.source;
-        res.target = v.target;
+    const getData = res.type === 'link' ? store.getLink : store.getNode;
+    const v = getData(res.id);
+    if (res.type === 'link') {
+        res.source = (v as Link).source;
+        res.target = (v as Link).target;
     } else {
-        const v = store.getNodeV(res.id);
-        res.groupId
+        res.name = (v as Node).viewName;
     }
+    res.content = v.content;
+    res.groupId = v.group;
+    const group = store.getGroup(res.type as 'link' | 'node', res.groupId)
+    res.groupLabel = group.label;
+    res.groupDescription = group.description;
     return res;
 });
 
-/**
- * {
- *  title 显示名称
- *  key GourpId
- *  children 子节点
- *  selectable 是否可选择
- *  isLeaf loadData 的时候用暂时没用
- * } 
- */
-const groupTree = [
-    {
-        title: '根节点',
-        key: '0-0',
-        children: [
-            {
-                title: 'parent 1-0',
-                key: '0-0-0',
-                children: [
-                    { title: 'leaf', key: '0-0-0-0' },
-                    { title: 'leaf', key: '0-0-0-1' },
-                ],
-            },
-            {
-                title: 'parent 1-1',
-                key: '0-0-1',
-                children: [
-                    { key: '0-0-1-0', title: 'sss' }
-                ],
-            },
-            {
-                title: '暂无信息',
-                key: '--',
-            }
-        ],
-    }, 
-];
 
-/**
- * value GroupId
- * label 显示名称
- * selectable: 是否可选
- * children 子节点
- */
-const selectGroupTree = [
-    {
-        value: 'id-1',
-        label: '节点-1',
-        selectable: false,
-        children: [
-            {
-                value: 'id-1-1',
-                label: '节点1-1',
-            },
-            {
-                value: 'id-1-2',
-                label: '1-2',
-            },
-            {
-                value: '--',
-                label: '无',
+const viewGroupTree = computed(() => {
+    if (viewInfo.value.id === "--"
+        || viewInfo.value.groupId === "--"
+        || viewInfo.value.type === "--"
+    ) {
+        return [];
+    }
+    const root = store.getGroup(viewInfo.value.type);
+    const res = convertGroup(root,'view')[0].children;
+    return res;
+})
 
-            }
-        ]
 
-    },
-];
+const selectGroupTree = computed(()=>{
+    if (viewInfo.value.id === "--"
+        || viewInfo.value.groupId === "--"
+        || viewInfo.value.type === "--"
+    ) {
+        return [];
+    }
+    const root = store.getGroup(viewInfo.value.type);
+    return convertGroup(root,'select')[0].children;
+})
 
-const expandedKeys = ref<string[]>(['0-0-0', '0-0-1']);
-const selectedKeys = ref<string[]>(['0-0-0', '0-0-1']);
-const checkedKeys = ref<string[]>(['0-0-0', '0-0-1']);
-watch(expandedKeys, () => {
-    console.log('expandedKeys', expandedKeys);
-});
-watch(selectedKeys, () => {
-    console.log('selectedKeys', selectedKeys);
-});
-watch(checkedKeys, () => {
-    console.log('checkedKeys', checkedKeys);
-});
+const expandedKeys = computed(()=>{
+    if (viewInfo.value.id === "--"
+        || viewInfo.value.groupId === "--"
+        || viewInfo.value.type === "--"
+    ) {
+        return [];
+    }
+    return [viewInfo.value.groupId];
+})
 
 </script>
 

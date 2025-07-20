@@ -24,6 +24,7 @@ interface Link {
 
 interface Group {
     id: string,
+    label: string,
     description: string,
     children: Group[] | string[],
     sourceGroup?: string

@@ -117,6 +117,7 @@ function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node"
     includeDefault?: boolean, abandonLeafData?: boolean): Group {
     const res = {
         id: dto.id,
+        label:dto.label,
         description: dto.description,
         children: [],
     } as Group
@@ -124,18 +125,19 @@ function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node"
     // 过滤默认组
     let filteredChildren: any = dto.children;
     if (!includeDefault) {
+        console.log("过滤了默认数值")
         if (dto.id === "node_group_root" || dto.id === "link_group_root") {
             filteredChildren = filteredChildren.filter((dto: { id: string; }) => dto.id !== 'default');
         }
     }
-
-
-    const isNotLeaf = type === "node" ? isNodeGroupArray : isLinkGroupArray;
-    let children: Group[] | string[] = [];
     if (filteredChildren.length == 0) {
-        // 也就是除了默认组之外没有其他组，根节点直接返回
+        // 也就是没有子节点了，节点直接返回
         return res;
     }
+
+    // 递归处理 children
+    const isNotLeaf = type === "node" ? isNodeGroupArray : isLinkGroupArray;
+    let children: Group[] | string[] = [];
     // 非叶子节点
     if (isNotLeaf(dto.children)) {
         children = dto.children.map((dto) => dfsConstructGroupFromDto(dto, type, includeDefault, abandonLeafData));
@@ -177,9 +179,18 @@ function convertGroup(root: Group | null | undefined, toType: 'view' | 'select')
     }
 }
 
+/**
+ * {
+ *  title 显示名称
+ *  key GourpId
+ *  children 子节点
+ *  selectable 是否可选择
+ *  isLeaf loadData 的时候用暂时没用
+ * } 
+ */
 function convertToViewGroup(group: Group): ViewGroupNode[] {
     const node: ViewGroupNode = {
-        title: group.description || group.id,
+        title: group.label || group.id,
         key: group.id
     };
 
@@ -190,10 +201,16 @@ function convertToViewGroup(group: Group): ViewGroupNode[] {
     return [node];
 }
 
+/**
+ * value GroupId
+ * label 显示名称
+ * selectable: 是否可选
+ * children 子节点
+ */
 function convertToSelectGroup(group: Group): SelectGroupNode[] {
     const node: SelectGroupNode = {
         value: group.id,
-        label: group.description || group.id,
+        label: group.label || group.id,
         selectable: group.children && group.children.length > 0 ? false : true
     };
 
@@ -213,4 +230,5 @@ export {
     convertDto2Link,
     convertDto2Node,
     dfsConstructGroupFromDto,
+    convertGroup,
 }
