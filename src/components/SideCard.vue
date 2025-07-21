@@ -1,11 +1,11 @@
 <template>
     <div style="padding-left: 5px; padding-top: 5px; padding-right: 2px;">
-        <a-card hoverable style="width: 100%; height: 70%;" :tab-list="tabList" :active-tab-key="tab" :title="'信息面板'"
+        <a-card v-if="tab !== 'edit'" hoverable style="width: 100%; height: 70%;" :tab-list="tabList" :active-tab-key="tab" :title="'信息面板'"
             @tabChange="(key: string) => { tab = key }">
             <template v-if="viewInfo.type!=='--'" #actions>
                 <a-space-compact>
-                    <a-button v-if="tab !== 'edit'" shape="round" type="primary" @click="tab = 'edit'">修改</a-button>
-                    <a-button v-if="tab !== 'edit'" shape="round" @click="console.log('删除功能还没做！')">删除</a-button>
+                    <a-button v-if="editType === 'none'" shape="round" type="primary" @click="editType = tab">修改</a-button>
+                    <a-button v-if="editType === 'none'" shape="round" @click="console.log('删除功能还没做！')">删除</a-button>
                 </a-space-compact>
             </template>
             <!-- 不同tab有不同内容 -->
@@ -33,28 +33,17 @@
                 </a-descriptions-item>
             </a-descriptions>
             <!-- 修改表单 以后会搬迁到主键里面去 -->
-            <a-form v-if="tab === 'edit'" :model="viewInfo">
-                <a-form-item label="显示名称">
-                    <a-input v-model:value="viewInfo.name" />
-                </a-form-item>
-                <a-form-item label="描述内容">
-                    <a-input v-model:value="viewInfo.content" />
-                </a-form-item>
-                <a-form-item label="组织节点">
-                    <a-tree-select v-model:value="viewInfo.groupId" show-search style="width: 100%"
-                        :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }" placeholder="Please select" treeLine
-                        allow-clear tree-default-expand-all :tree-data="selectGroupTree">
-                        <template #title="{ value: val, label }">
-                            {{ label }}
-                        </template>
-                    </a-tree-select>
-                </a-form-item>
-                <a-space size="large">
-                    <a-button type="primary" shape="round" html-type="submit">提交</a-button>
-                    <a-button type="default" shape="round" @click="tab = 'info'">取消</a-button>
-                </a-space>
-            </a-form>
         </a-card>
+        <div v-if="editType === 'info' && tab === 'info'" >
+            <ElementForm :formMode="'edit'" @cancel="editType='none'" />
+        </div>
+        <div v-if="editType === 'org' && tab === 'org'" >
+            <a-card>
+                这里什么都没有哦
+                <a-button shape="round" type="primary" @click="editType = 'none'">没有实现功能，这是取消按钮</a-button>
+            </a-card>
+        </div>
+        
     </div>
 </template>
 
@@ -62,10 +51,18 @@
 import { useDataSotre } from '@/stores/data';
 import type { Link, Node } from '@/types/data.types';
 import { convertGroup } from '@/utils/common.utils';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import ElementForm from './ElementForm.vue';
 
 const tab = ref('info');
 const store = useDataSotre();
+const editType = ref('none');
+
+watch(tab,(newVal)=>{
+    if(editType.value !== newVal){
+        editType.value = 'none';
+    }
+})
 
 const tabList = [
     {
@@ -140,18 +137,6 @@ const viewGroupTree = computed(() => {
     const root = store.getGroup(viewInfo.value.type);
     const res = convertGroup(root,'view')[0].children;
     return res;
-})
-
-
-const selectGroupTree = computed(()=>{
-    if (viewInfo.value.id === "--"
-        || viewInfo.value.groupId === "--"
-        || viewInfo.value.type === "--"
-    ) {
-        return [];
-    }
-    const root = store.getGroup(viewInfo.value.type);
-    return convertGroup(root,'select')[0].children;
 })
 
 const expandedKeys = computed(()=>{

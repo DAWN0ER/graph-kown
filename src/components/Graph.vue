@@ -40,8 +40,11 @@ onMounted(() => {
         .width(graphContainer.value.clientWidth)
         .height(graphContainer.value.clientHeight)
         .nodeVal(25)
-        .linkWidth(10).linkColor("#8B5CF6")
-        .nodeCanvasObject(textBoxConfig);
+        .linkWidth(4).linkColor("#8B5CF6")
+        .nodeCanvasObject(textBoxConfig)
+        .linkDirectionalParticles(4)
+        .linkDirectionalParticleWidth(5)
+        .linkDirectionalParticleSpeed(0.008);
     // force
     draw.value.d3VelocityDecay(0.6);
     draw.value.d3Force('collide', d3.forceCollide().radius(50).strength(0.4));

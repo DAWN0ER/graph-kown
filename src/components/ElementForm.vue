@@ -1,6 +1,6 @@
 <template>
     <div class="graph-element-form">
-        <a-form :model="formData" @submit="handleSubmit">
+        <a-form :model="formData">
             <!-- 基础信息 -->
             <a-form-item v-if="formData.type === 'node'" label="显示名称">
                 <a-input v-model:value="formData.name" />
@@ -37,12 +37,17 @@
                     </a-select>
                 </a-form-item>
             </div>
-
-            <a-space size="large">
-                <a-button type="primary" shape="round" @click="handleSubmit">
-                    {{ isEditMode ? '保存修改' : '添加' }}
-                </a-button>
-            </a-space>
+            <a-flex style="width: 100%;" :justify="'center'" gap="middle">
+                <button class="btn-primary" @click="handleSubmit">
+                    {{ isEditMode ? '保存' : '添加' }}
+                </button>
+                <button class="btn-ghost" @click="emit('cancel')">
+                    取消
+                </button>
+                <button class="btn-ghost" @click="initFormData">
+                    重置
+                </button>
+            </a-flex>
         </a-form>
     </div>
 </template>
@@ -52,6 +57,8 @@ import { useDataSotre } from '@/stores/data';
 import type { Link, Node } from '@/types/data.types';
 import { convertGroup } from '@/utils/common.utils';
 import { ref, computed, onMounted, watch } from 'vue';
+import { message } from 'ant-design-vue';
+import { generateUnique16BitUid } from '@/utils/tool.utils';
 
 const store = useDataSotre();
 
@@ -75,6 +82,10 @@ const props = defineProps({
         validator: (value: string) => ['addNode', 'addLink', 'edit'].includes(value)
     },
 });
+
+const emit = defineEmits<{
+    (e: 'cancel'): void,
+}>();
 
 // 表单数据
 const formData = ref<Partial<Info>>({
@@ -124,7 +135,7 @@ const availableTargetNodes = computed<{ id: string, viewName: string }[]>(() => 
 // 依赖 current
 const selectGroupTree = computed(() => {
     if (isEditMode.value) {
-        if (store.current.id === "--"|| store.current.type === "--") {
+        if (store.current.id === "--" || store.current.type === "--") {
             return [];
         }
         const root = store.getGroup(store.current.type);
@@ -183,7 +194,7 @@ watch(() => store.current, (newVal) => {
 const initFormData = () => {
     // 添加模式，生成空数据
     formData.value = JSON.parse(JSON.stringify(emptyInfo));
-    formData.value.type = props.formMode.includes("node") ? 'node' : 'link';
+    formData.value.type = props.formMode.includes("Node") ? 'node' : 'link';
 
     // 编辑模式，使用初始数据填充表单
     if (isEditMode.value) {
@@ -216,11 +227,12 @@ const handleSubmit = () => {
 
         }
     }
-    // 处理添加 
+    // 处理添加，校验的逻辑后面做 
     else {
         if (dataToSave.type === "node") {
+
             store.addNode({
-                id: dataToSave.id || 'id',
+                id: generateUnique16BitUid(),
                 viewName: dataToSave.name || '',
                 content: dataToSave.content || '',
                 group: dataToSave.groupId || 'default',
@@ -228,7 +240,7 @@ const handleSubmit = () => {
             })
         } else {
             store.addLink({
-                id: dataToSave.id || '--',
+                id: generateUnique16BitUid(),
                 content: dataToSave.content || '',
                 labels: [],
                 group: dataToSave.groupId || 'default',
@@ -258,7 +270,8 @@ onMounted(() => {
 
 <style scoped>
 .graph-element-form {
-    padding: 16px;
+    padding: 10px;
+    border-radius: 10px;
     margin-top: 5px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     background-color: white;
@@ -269,4 +282,58 @@ onMounted(() => {
     padding-top: 16px;
     border-top: 1px solid #b8b8b8;
 }
+
+/* 绿色系主按钮样式（匹配 colorPrimary: "#00ba7d"） */
+.btn-primary {
+  background-color: #00ba7d; /* 主题主色 */
+  color: #fff; /* 白色文字 */
+  border: none;
+  border-radius: 32px; 
+  padding: 6px 16px; 
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease; /* 平滑过渡 */
+}
+
+/* 主按钮交互状态 */
+.btn-primary:hover {
+  background-color: #00a86b; /* hover时加深一点 */
+}
+
+.btn-primary:active {
+  background-color: #00965e; /* 点击时更深 */
+}
+
+.btn-primary:focus {
+  outline: 2px solid rgba(0, 186, 125, 0.3); /* 聚焦时显示绿色轮廓 */
+  outline-offset: 2px;
+}
+
+/* 幽灵按钮样式（绿色边框） */
+.btn-ghost {
+  background-color: transparent;
+  color: #00ba7d; /* 主色文字 */
+  border: 1px solid #00ba7d; /* 主色边框 */
+  border-radius: 32px; 
+  padding: 6px 16px; 
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 幽灵按钮交互状态 */
+.btn-ghost:hover {
+  background-color: rgba(0, 186, 125, 0.08); /* 轻微绿色背景 */
+}
+
+.btn-ghost:active {
+  background-color: rgba(0, 186, 125, 0.15); /* 点击时加深背景 */
+}
+
+.btn-ghost:focus {
+  outline: 2px solid rgba(0, 186, 125, 0.3);
+  outline-offset: 2px;
+}
+
+
 </style>
