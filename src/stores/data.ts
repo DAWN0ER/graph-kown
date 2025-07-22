@@ -169,7 +169,7 @@ export const useDataSotre = defineStore('dataBase', () => {
         const val = nodeMap.get(id);
         if (!val) return;
         const ins = val.linksIn.map(l => l.id);
-        const outs = val.linksOut.map(l => id);
+        const outs = val.linksOut.map(l => l.id);
         changeNode(val, "del");
         dealWithDel.forEach(fn => fn([id], [...ins, ...outs]))
     }

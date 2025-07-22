@@ -5,11 +5,11 @@
             <template v-if="viewInfo.type!=='--'" #actions>
                 <a-space-compact>
                     <a-button v-if="editType === 'none'" shape="round" type="primary" @click="editType = tab">修改</a-button>
-                    <a-button v-if="editType === 'none'" shape="round" @click="console.log('删除功能还没做！')">删除</a-button>
+                    <a-button v-if="editType === 'none'" shape="round" @click="handleDelete">删除</a-button>
                 </a-space-compact>
             </template>
             <!-- 不同tab有不同内容 -->
-            <a-descriptions v-if="tab === 'info'" :title="`ID: ${viewInfo.type}-${viewInfo.id}`" :column="1"
+            <a-descriptions v-if="tab === 'info'" :title="`类型: ${viewInfo.type}`" :column="1"
                 size="small">
                 <a-descriptions-item v-if="viewInfo.type === 'node'" label="显示名称">{{ viewInfo.name
                     }}</a-descriptions-item>
@@ -126,7 +126,6 @@ const viewInfo = computed(() => {
     return res;
 });
 
-
 const viewGroupTree = computed(() => {
     if (viewInfo.value.id === "--"
         || viewInfo.value.groupId === "--"
@@ -148,6 +147,18 @@ const expandedKeys = computed(()=>{
     }
     return [viewInfo.value.groupId];
 })
+
+const handleDelete = () => {
+    if (viewInfo.value.id === "--") {
+        return;
+    }
+    if (viewInfo.value.type === "link") {
+        store.delLink(viewInfo.value.id) ;
+        console.log("DELETE LINK",viewInfo.value.id);
+    } else {
+        store.delNode(viewInfo.value.id);
+    }
+}
 
 </script>
 

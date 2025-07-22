@@ -1,16 +1,16 @@
 <template>
     <div class="graph-element-form">
         <a-form :model="formData">
-            <!-- 基础信息 -->
+            <!-- 节点特定属性 -->
             <a-form-item v-if="formData.type === 'node'" label="显示名称">
                 <a-input v-model:value="formData.name" />
             </a-form-item>
-
+            <!-- 基础信息 -->
             <a-form-item label="描述内容">
                 <a-input v-model:value="formData.content" />
             </a-form-item>
-
-            <a-form-item label="组织节点">
+            <!-- 修改模式不允许改变组织节点 -->
+            <a-form-item v-if="!isEditMode" label="组织节点">
                 <a-tree-select v-model:value="formData.groupId" show-search style="width: 100%"
                     :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }" placeholder="请选择组织节点" tree-line
                     allow-clear tree-default-expand-all :tree-data="selectGroupTree">
@@ -99,14 +99,15 @@ const formData = ref<Partial<Info>>({
     target: '',
 });
 
-const triggerAvalibleNodes = ref(0);
+const NodesChangeFlag = ref(0);
 
 // 计算属性：当前是否为编辑模式
 const isEditMode = computed(() => props.formMode === 'edit');
 
-// 对于 Links 计算属性：可用节点列表，从 store 里面拿到，依赖current
-// 这里有一致性的问题，干脆每次 open 一次就计算一次
+// 对于 Links 计算属性：可用节点列表，从 store 里面拿到，依赖formData.groupId
+// 这里有一致性的问题，所以每次有节点改变的时候都重新计算
 const availableSourceNodes = computed<{ id: string, viewName: string }[]>(() => {
+    NodesChangeFlag.value; // 一致性保证
     if (formData.value.type === "link" && formData.value.groupId) {
         const linkGroupInfo = store.getGroup('link', formData.value.groupId);
         if (!linkGroupInfo.sourceGroup) return [];
@@ -119,6 +120,7 @@ const availableSourceNodes = computed<{ id: string, viewName: string }[]>(() => 
     return [];
 });
 const availableTargetNodes = computed<{ id: string, viewName: string }[]>(() => {
+    NodesChangeFlag.value; // 一致性保证
     if (formData.value.type === "link" && formData.value.groupId) {
         const linkGroupInfo = store.getGroup('link', formData.value.groupId);
         if (!linkGroupInfo.targetGroup) return [];
@@ -254,7 +256,7 @@ const handleSubmit = () => {
 
 const dataChange = (ns: string[], ls: string[]) => {
     if (ns.length > 0) {
-        triggerAvalibleNodes.value = (triggerAvalibleNodes.value + 1) % 13;
+        NodesChangeFlag.value = (NodesChangeFlag.value + 1) % 13;
     }
 }
 
