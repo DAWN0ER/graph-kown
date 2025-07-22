@@ -68,11 +68,13 @@ onMounted(() => {
 
     store.registerHook(dealAdd, "add");
     store.registerHook(dealDel, "del");
+    store.registerUpdateHook(edit);
 });
 
 onUnmounted(()=>{
     store.unregisterHook(dealAdd, "add");
     store.unregisterHook(dealDel, "del");
+    store.unregisterUpdateHook(edit);
     draw.value = null;
 });
 
@@ -107,6 +109,12 @@ const dealDel = (ns: string[], ls: string[]) => {
     ns.forEach(id => nodes.delete(id));
     ls.forEach(id => links.delete(id));
     refresh();
+}
+
+const edit = (id: string, type: "node" | "link", data: any) => {
+    if (type === "node") {
+        (nodes.get(id) as NodeVo).viewName = data.viewName;
+    }
 }
 
 </script>

@@ -6,6 +6,7 @@ import { convertDto2Link, convertDto2Node, convertLink2Dto, convertLinkDto2V, co
 import type { LinkDto, LinkGroup, NodeDto, NodeGroup } from '@/types/cache.types';
 
 type DataHookFunc = (nodes: string[], links: string[]) => void
+type DataUpdateFunc = (id:string, type:'node'|'link', data:any) => void
 
 export const useDataSotre = defineStore('dataBase', () => {
 
@@ -33,6 +34,7 @@ export const useDataSotre = defineStore('dataBase', () => {
 
     const dealWithAdd: Set<DataHookFunc> = new Set();
     const dealWithDel: Set<DataHookFunc> = new Set();
+    const dealWithUpdate: Set<DataUpdateFunc> = new Set();
 
     // 这里是观测状态变更用的计数器，只允许在 loadData 的时候用
     const change = ref<number>(0);
@@ -155,6 +157,14 @@ export const useDataSotre = defineStore('dataBase', () => {
         }
     }
 
+    const registerUpdateHook = (fn: DataUpdateFunc) => { 
+        dealWithUpdate.add(fn);
+    }
+
+    const unregisterUpdateHook = (fn: DataUpdateFunc) => { 
+        dealWithUpdate.delete(fn);
+    }
+
     const addNode = (node: Node) => {
         changeNode(convertNode2Dto(node), "add")
         dealWithAdd.forEach((fn) => fn([node.id], []));
@@ -179,6 +189,22 @@ export const useDataSotre = defineStore('dataBase', () => {
         if (!val) return;
         changeLink(val, "del");
         dealWithDel.forEach(fn => fn([], [id]));
+    }
+
+    // 这里的 data 暂定只包括：viewName（node）, content, labels（开发中）
+    const editData = (id: string, type: "node" | "link", data: any) => { 
+        if(type === "node"){
+            const n = nodeMap.get(id) as NodeDto;
+            console.log(n);
+            if(data.viewName) n.viewName = data.viewName;
+            if(data.content) n.content = data.content;
+            if(data.labels) n.labels = data.labels;
+        } else {
+            const l = linkMap.get(id) as LinkDto;
+            if(data.content) l.content = data.content;
+            if(data.labels) l.labels = data.labels;
+        }
+        dealWithUpdate.forEach(fn => fn(id,type,data));
     }
 
     // 这里面的所有 get 方法都需要加上 undifine 的
@@ -226,6 +252,7 @@ export const useDataSotre = defineStore('dataBase', () => {
         addNode,
         delLink,
         delNode,
+        editData,
         //Read
         getNodeV,
         getLinkV,
@@ -238,6 +265,8 @@ export const useDataSotre = defineStore('dataBase', () => {
         initGraphData,
         registerHook,
         unregisterHook,
+        registerUpdateHook,
+        unregisterUpdateHook,
         downloadData,
         current,
         change,

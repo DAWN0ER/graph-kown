@@ -113,8 +113,8 @@ const viewInfo = computed(() => {
     const getData = res.type === 'link' ? store.getLink : store.getNode;
     const v = getData(res.id);
     if (res.type === 'link') {
-        res.source = (v as Link).source;
-        res.target = (v as Link).target;
+        res.source = store.getNode((v as Link).source).viewName;
+        res.target = store.getNode((v as Link).target).viewName;
     } else {
         res.name = (v as Node).viewName;
     }
@@ -152,12 +152,15 @@ const handleDelete = () => {
     if (viewInfo.value.id === "--") {
         return;
     }
+    
     if (viewInfo.value.type === "link") {
         store.delLink(viewInfo.value.id) ;
-        console.log("DELETE LINK",viewInfo.value.id);
     } else {
         store.delNode(viewInfo.value.id);
     }
+    store.current.id = '--';
+    store.current.type = '--';
+    console.log(store.current)
 }
 
 </script>

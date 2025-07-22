@@ -21,7 +21,7 @@
             </a-form-item>
 
             <!-- 链接特定属性 -->
-            <div v-if="formData.type === 'link'" class="link-properties">
+            <div v-if="formData.type === 'link' && !isEditMode" class="link-properties">
                 <a-form-item label="起点">
                     <a-select v-model:value="formData.source" style="width: 100%">
                         <a-select-option v-for="node in availableSourceNodes" :key="node.id" :value="node.id">
@@ -210,9 +210,15 @@ const initFormData = () => {
 const handleSubmit = () => {
     // 根据当前模式过滤数据
     let dataToSave: Partial<Info> = { ...formData.value };
-    console.log("submit")
     // 确保类型与当前模式一致
     dataToSave.type = props.formMode.includes('Node') ? 'node' : 'link';
+    if (isEditMode.value){
+        dataToSave.type = store.current.type;
+    }
+    if(dataToSave.type === '--'){
+        message.error('当前数据类型异常');
+        return;
+    }
 
     // 移除不需要的字段
     if (dataToSave.type === 'node') {
@@ -223,16 +229,15 @@ const handleSubmit = () => {
     }
     // 处理修改
     if (isEditMode.value) {
-        if (dataToSave.type === "node") {
-            // 还没想好怎么处理
-        } else {
-
-        }
+        console.log(dataToSave.id);
+        store.editData(dataToSave.id as string, dataToSave.type, {
+            content: dataToSave.content || '',
+            viewName: dataToSave.name || '',
+        })
     }
     // 处理添加，校验的逻辑后面做 
     else {
         if (dataToSave.type === "node") {
-
             store.addNode({
                 id: generateUnique16BitUid(),
                 viewName: dataToSave.name || '',
@@ -251,7 +256,8 @@ const handleSubmit = () => {
             })
         }
     }
-
+    emit('cancel');
+    initFormData();
 };
 
 const dataChange = (ns: string[], ls: string[]) => {
@@ -265,8 +271,6 @@ onMounted(() => {
     initFormData();
     store.registerHook(dataChange, "add");
     store.registerHook(dataChange, 'del');
-    console.log("mounted");
-
 });
 </script>
 
@@ -287,55 +291,63 @@ onMounted(() => {
 
 /* 绿色系主按钮样式（匹配 colorPrimary: "#00ba7d"） */
 .btn-primary {
-  background-color: #00ba7d; /* 主题主色 */
-  color: #fff; /* 白色文字 */
-  border: none;
-  border-radius: 32px; 
-  padding: 6px 16px; 
-  font-size: 15px;
-  cursor: pointer;
-  transition: background-color 0.2s ease; /* 平滑过渡 */
+    background-color: #00ba7d;
+    /* 主题主色 */
+    color: #fff;
+    /* 白色文字 */
+    border: none;
+    border-radius: 32px;
+    padding: 6px 16px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    /* 平滑过渡 */
 }
 
 /* 主按钮交互状态 */
 .btn-primary:hover {
-  background-color: #00a86b; /* hover时加深一点 */
+    background-color: #00a86b;
+    /* hover时加深一点 */
 }
 
 .btn-primary:active {
-  background-color: #00965e; /* 点击时更深 */
+    background-color: #00965e;
+    /* 点击时更深 */
 }
 
 .btn-primary:focus {
-  outline: 2px solid rgba(0, 186, 125, 0.3); /* 聚焦时显示绿色轮廓 */
-  outline-offset: 2px;
+    outline: 2px solid rgba(0, 186, 125, 0.3);
+    /* 聚焦时显示绿色轮廓 */
+    outline-offset: 2px;
 }
 
 /* 幽灵按钮样式（绿色边框） */
 .btn-ghost {
-  background-color: transparent;
-  color: #00ba7d; /* 主色文字 */
-  border: 1px solid #00ba7d; /* 主色边框 */
-  border-radius: 32px; 
-  padding: 6px 16px; 
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+    background-color: transparent;
+    color: #00ba7d;
+    /* 主色文字 */
+    border: 1px solid #00ba7d;
+    /* 主色边框 */
+    border-radius: 32px;
+    padding: 6px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 /* 幽灵按钮交互状态 */
 .btn-ghost:hover {
-  background-color: rgba(0, 186, 125, 0.08); /* 轻微绿色背景 */
+    background-color: rgba(0, 186, 125, 0.08);
+    /* 轻微绿色背景 */
 }
 
 .btn-ghost:active {
-  background-color: rgba(0, 186, 125, 0.15); /* 点击时加深背景 */
+    background-color: rgba(0, 186, 125, 0.15);
+    /* 点击时加深背景 */
 }
 
 .btn-ghost:focus {
-  outline: 2px solid rgba(0, 186, 125, 0.3);
-  outline-offset: 2px;
+    outline: 2px solid rgba(0, 186, 125, 0.3);
+    outline-offset: 2px;
 }
-
-
 </style>
