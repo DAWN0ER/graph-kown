@@ -2,7 +2,7 @@ import { ref, computed, reactive } from 'vue'
 import { defineStore } from 'pinia'
 import type { LinkVo, NodeVo } from '@/types/render.types';
 import type { Link, Node, Data, Group } from '@/types/data.types';
-import { convertDto2Link, convertDto2Node, convertLink2Dto, convertLinkDto2V, convertNode2Dto, convertNodeDto2V, dfsConstructGroupFromDto, handleDownload } from '@/utils/common.utils';
+import { convertDto2Link, convertDto2Node, convertLink2Dto, convertLinkDto2V, convertNode2Dto, convertNodeDto2V, dfsConstructDtoFromGroup, dfsConstructGroupFromDto, handleDownload } from '@/utils/common.utils';
 import type { LinkDto, LinkGroup, NodeDto, NodeGroup } from '@/types/cache.types';
 
 type DataHookFunc = (nodes: string[], links: string[]) => void
@@ -53,7 +53,7 @@ export const useDataSotre = defineStore('dataBase', () => {
         switch (operate) {
             case 'add':
                 nodeMap.set(node.id, node);
-                (nodeGroupMap.get(node.group)?.children as NodeDto[]).push(node);
+                nodeGroupMap.get(node.group)?.leafData?.push(node);
                 break;
             case 'del':
                 nodeMap.delete(node.id);
@@ -63,8 +63,8 @@ export const useDataSotre = defineStore('dataBase', () => {
                 const tmpO = node.linksOut;
                 node.linksOut = [];
                 tmpO.forEach(l => changeLink(l, "del"));
-                const idx = (nodeGroupMap.get(node.group)?.children as NodeDto[]).findIndex(n => n.id === node.id);
-                nodeGroupMap.get(node.group)?.children.splice(idx, 1);
+                const idx = nodeGroupMap.get(node.group)?.leafData?.findIndex(n => n.id === node.id);
+                if(idx) nodeGroupMap.get(node.group)?.leafData?.splice(idx, 1);
                 break;
         }
     }
@@ -75,14 +75,14 @@ export const useDataSotre = defineStore('dataBase', () => {
                 linkMap.set(link.id, link);
                 link.from.linksOut.push(link);
                 link.to.linksIn.push(link);
-                (linkGroupMap.get(link.group)?.children as LinkDto[]).push(link);
+                linkGroupMap.get(link.group)?.leafData?.push(link);
                 break;
             case 'del':
                 linkMap.delete(link.id);
                 link.to.linksIn.splice(link.to.linksIn.findIndex(e => e.id === link.id), 1);
                 link.from.linksOut.splice(link.from.linksOut.findIndex(e => e.id === link.id), 1);
-                const idx = (linkGroupMap.get(link.group)?.children as LinkDto[]).findIndex(l => l.id === link.id);
-                linkGroupMap.get(link.group)?.children.splice(idx, 1);
+                const idx = linkGroupMap.get(link.group)?.leafData?.findIndex(l => l.id === link.id);
+                if(idx) linkGroupMap.get(link.group)?.leafData?.splice(idx, 1);
                 break;
         }
     }
@@ -94,8 +94,9 @@ export const useDataSotre = defineStore('dataBase', () => {
         for (let ele of temp.nodes) {
             const tmpNode = convertNode2Dto(ele);
             nodeMap.set(tmpNode.id, tmpNode);
+            // 默认组别填充
             if (!tmpNode.group || tmpNode.group === "" || tmpNode.group === "default") {
-                (nodeGroupMap.get("default")?.children as NodeDto[]).push(tmpNode)
+                (nodeGroupMap.get("default")?.leafData as NodeDto[]).push(tmpNode)
             }
         }
         console.log("loading links");
@@ -104,9 +105,24 @@ export const useDataSotre = defineStore('dataBase', () => {
             linkMap.set(tmpLink.id, tmpLink);
             tmpLink.from.linksOut.push(tmpLink);
             tmpLink.to.linksIn.push(tmpLink);
+            // 默认组别填充
             if (!tmpLink.group || tmpLink.group === "" || tmpLink.group === "default") {
-                (linkGroupMap.get("default")?.children as LinkDto[]).push(tmpLink)
+                (linkGroupMap.get("default")?.leafData as LinkDto[]).push(tmpLink)
             }
+        }
+        console.log("loading node groups");
+        console.log(temp.nodeGroups);
+        for (let ele of temp.nodeGroups) {
+            const tmpNodeGroup = dfsConstructDtoFromGroup(ele, 'node',nodeGroupMap, nodeMap,undefined) as NodeGroup;
+            tmpNodeGroup.parentGroup = nodeGroupRoot;
+            (nodeGroupRoot.children as NodeGroup[]).push(tmpNodeGroup);
+        }
+        console.log("loading link groups");
+        for (let ele of temp.linkGroups) {
+            const tmpLinkGroup = dfsConstructDtoFromGroup(ele, 'link', linkGroupMap,undefined, linkMap) as LinkGroup;
+            tmpLinkGroup.parentGroup = linkGroupRoot;
+            linkGroupMap.set(tmpLinkGroup.id, tmpLinkGroup);
+            (linkGroupRoot.children as LinkGroup[]).push(tmpLinkGroup);
         }
         change.value++;
     }
@@ -232,18 +248,23 @@ export const useDataSotre = defineStore('dataBase', () => {
             if (!group) {
                 throw Error(`No such a Group of id=${id}`)
             }
-            return {
+            const res = {
                 id: group.id,
                 label: group.label,
                 description: group.description,
                 sourceGroup: (group as any)?.sourceGroup?.id,
                 targetGroup: (group as any)?.targetGroup?.id,
-                children: withChlidren ? group.children.map(dto => dto.id) : [],
+                children:[] as string[],
+            }
+            if(withChlidren){
+                if(group.children) res.children = group.children.map(child => child.id);
+                else if (group.leafData) res.children = group.leafData.map(leaf => leaf.id);
             }
         }
         // 没有指明ID就直接返回根节点（只包括Group，没有叶子节存储的data的id)
         const root = type === 'link' ? linkGroupRoot : nodeGroupRoot;
-        return dfsConstructGroupFromDto(root, type, true, true);
+        const res = dfsConstructGroupFromDto(root, type, true, true);
+        return res;
     }
 
     return {

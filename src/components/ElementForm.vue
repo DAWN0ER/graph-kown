@@ -145,7 +145,8 @@ const selectGroupTree = computed(() => {
     } else {
         const type = props.formMode.includes("Node") ? "node" : "link";
         const root = store.getGroup(type);
-        return convertGroup(root, 'select')[0].children;
+        const res = convertGroup(root, 'select')[0].children;
+        return res;
     }
 
 })

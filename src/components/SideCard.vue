@@ -20,7 +20,7 @@
                 <a-descriptions-item v-if="viewInfo.type === 'link'" label="终点ID">{{ viewInfo.target
                 }}</a-descriptions-item>
             </a-descriptions>
-            <a-descriptions v-if="tab === 'org'" :title="viewInfo.groupId" :column="1" :expandedKeys="viewInfo.groupId">
+            <a-descriptions v-if="tab === 'org'" :title="viewInfo.groupId" :column="1">
                 <a-descriptions-item label="描述">
                     {{ viewInfo.groupDescription }}
                 </a-descriptions-item>
@@ -123,8 +123,15 @@ const viewInfo = computed(() => {
     const group = store.getGroup(res.type as 'link' | 'node', res.groupId)
     res.groupLabel = group.label;
     res.groupDescription = group.description;
+    // 这里更改页面视图为 Info
+    tab.value = 'info';
     return res;
 });
+
+const expandedKeys = computed(() => { 
+    return [viewInfo.value.groupId];
+})
+
 
 const viewGroupTree = computed(() => {
     if (viewInfo.value.id === "--"
@@ -136,16 +143,6 @@ const viewGroupTree = computed(() => {
     const root = store.getGroup(viewInfo.value.type);
     const res = convertGroup(root,'view')[0].children;
     return res;
-})
-
-const expandedKeys = computed(()=>{
-    if (viewInfo.value.id === "--"
-        || viewInfo.value.groupId === "--"
-        || viewInfo.value.type === "--"
-    ) {
-        return [];
-    }
-    return [viewInfo.value.groupId];
 })
 
 const handleDelete = () => {

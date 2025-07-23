@@ -25,7 +25,7 @@ const handleDownload = (data: any) => {
 
 // 类型转换工具
 const convertNode2Dto = (jsonData: Node): NodeDto => {
-    return {
+    const res = {
         id: jsonData.id,
         viewName: jsonData.viewName,
         content: jsonData.content,
@@ -33,12 +33,16 @@ const convertNode2Dto = (jsonData: Node): NodeDto => {
         labels: jsonData.labels,
         linksIn: [],
         linksOut: [],
+    };
+    if (!res.group || res.group === ""){
+        res.group = "default";
     }
+    return res;
 }
 
 const convertLink2Dto = (jsonData: Link, nodeMap: Map<string, NodeDto>): LinkDto => {
 
-    return {
+    const res = {
         id: jsonData.id,
         content: jsonData.content,
         group: jsonData.group,
@@ -46,6 +50,10 @@ const convertLink2Dto = (jsonData: Link, nodeMap: Map<string, NodeDto>): LinkDto
         from: nodeMap.get(jsonData.source) as NodeDto,
         to: nodeMap.get(jsonData.target) as NodeDto,
     }
+    if (!res.group || res.group === ""){
+        res.group = "default";
+    }
+    return res;
 }
 
 const convertNodeDto2V = (node: NodeDto): NodeVo => {
@@ -89,28 +97,12 @@ const convertDto2Link = (dto: LinkDto): Link => {
     }
 }
 
-// 判断是否为 LinkGroup 数组
-function isLinkGroupArray(children: any[]): children is LinkGroup[] {
-    return children.length > 0 && children.every(child =>
-        (child as LinkGroup).sourceGroup !== undefined ||
-        (child as LinkGroup).targetGroup !== undefined
-    );
-}
-
-// 判断是否为 NodeGroup 数组
-function isNodeGroupArray(children: any[]): children is NodeGroup[] {
-    return children.length > 0 && children.every(child =>
-        (child as NodeGroup).linkOutGroups !== undefined ||
-        (child as NodeGroup).linkInGroups !== undefined
-    );
-}
-
 /**
  * DFS 构造 Group 数据
  * @param dto 
  * @param type 
  * @param includeDefault 是否包含默认组，只在根节点生效一次
- * @param abandonLeafData 是否抛弃叶子节点的Children [ids] 数据
+ * @param abandonLeafData 是否抛弃叶子节点的leafData数据
  * @returns 
  */
 function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node" | "link",
@@ -136,23 +128,85 @@ function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node"
     }
 
     // 递归处理 children
-    const isNotLeaf = type === "node" ? isNodeGroupArray : isLinkGroupArray;
     let children: Group[] | string[] = [];
     // 非叶子节点
-    if (isNotLeaf(dto.children)) {
+    if (dto.children) {
         children = dto.children.map((dto) => dfsConstructGroupFromDto(dto, type, includeDefault, abandonLeafData));
     }
-    // 叶子节点，如果子节点数组为空，也默认是叶子节点
-    else {
+    // 叶子节点
+    else if(dto.leafData) {
         if (type === 'link') {
             res.sourceGroup = (dto as LinkGroup).sourceGroup?.id;
             res.targetGroup = (dto as LinkGroup).targetGroup?.id;
         }
-        if (!abandonLeafData) children = dto.children.map(dto => dto.id);
+        if (!abandonLeafData) children = dto.leafData.map(dto => dto.id);
     }
     res.children = children;
     return res;
 }
+
+/**
+ * DFS 构造 GroupDto 数据
+ * @param group Group 数据
+ * @param type 节点类型
+ * @param nodeMap 节点映射表
+ * @param linkMap 链接映射表
+ * @returns GroupDto 对象
+ */
+function dfsConstructDtoFromGroup(
+  group: Group, 
+  type: "node" | "link",
+  map:Map<string,GroupDto<NodeDto | LinkDto>>,
+  nodeMap?: Map<string, NodeDto>,
+  linkMap?: Map<string, LinkDto>
+): GroupDto<NodeDto | LinkDto> {
+  const res = {
+    id: group.id,
+    label: group.label,
+    description: group.description,
+    children: []
+  } as GroupDto<NodeDto | LinkDto>;
+
+  // 处理 LinkGroup 特有属性
+  if (type === "link" && group.sourceGroup !== undefined) {
+    (res as any).sourceGroup = { id: group.sourceGroup } as NodeDto;
+  }
+  if (type === "link" && group.targetGroup !== undefined) {
+    (res as any).targetGroup = { id: group.targetGroup } as NodeDto;
+  }
+
+  // 如果 children 为空，直接返回
+  if (!group.children || group.children.length === 0) {
+    return res;
+  }
+
+  // 判断是否为叶子节点（包含实际数据ID的数组）
+  const isLeaf = typeof group.children[0] === 'string';
+  
+  if (isLeaf) {
+    // 叶子节点，children 包含的是实际数据的 ID
+    if (type === "node" && nodeMap) {
+      res.leafData = group.children
+        .map(id => nodeMap.get(id as string))
+        .filter(dto => dto !== undefined) as (NodeDto | LinkDto)[];
+    } else if (type === "link" && linkMap) {
+      res.leafData = group.children
+        .map(id => linkMap.get(id as string))
+        .filter(dto => dto !== undefined) as (NodeDto | LinkDto)[];
+    }
+  } else {
+    // 非叶子节点，递归处理子组
+    res.children = group.children.map(child => 
+      dfsConstructDtoFromGroup(child as Group, type,map, nodeMap, linkMap)
+    );
+    // 填充子节点的父节点引用
+    res.children.forEach(child => child.parentGroup = res);
+  }
+  map.set(res.id, res);
+  return res;
+}
+
+export { dfsConstructDtoFromGroup };
 
 interface ViewGroupNode {
     title: string;

@@ -21,7 +21,8 @@ interface GroupDto<D extends DataDto> {
     label: string;
     description: string;
     parentGroup?:GroupDto<D>;
-    children: GroupDto<D>[] | D[]; // 当children 是 D[] 的时候是叶子节点
+    children?: GroupDto<D>[]; // 只有非叶子节点有
+    leafData?: D[]; // 只有叶子节点有
 }
 
 // 叶子节点必须有的属性

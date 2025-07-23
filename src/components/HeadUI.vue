@@ -40,7 +40,7 @@ const click = () => {
     files[0].text().then((content) => {
         const data = JSON.parse(content) as Data;
         store.loadData(data);
-        console.log("SUCCESS")
+        console.log(`success to loading data from ${files[0].name}`)
         btnText.value = `当前文件：${files[0].name}`;
     })
 }
