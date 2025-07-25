@@ -20,8 +20,8 @@ export const useDataSotre = defineStore('dataBase', () => {
 
     // 初始化默认组
     {
-        const defaultNodeGroup: NodeGroup = { id: 'default', label: "default", description: '默认节点组', parentGroup: nodeGroupRoot, children: [] }
-        const defaultLinkGroup: LinkGroup = { id: 'default', label: "default", description: '默认链接组', parentGroup: linkGroupRoot, children: [] }
+        const defaultNodeGroup: NodeGroup = { id: 'default', label: "default", description: '默认节点组', parentGroup: nodeGroupRoot, leafData: [] }
+        const defaultLinkGroup: LinkGroup = { id: 'default', label: "default", description: '默认链接组', parentGroup: linkGroupRoot, leafData: [] }
         defaultLinkGroup.sourceGroup = defaultNodeGroup;
         defaultLinkGroup.targetGroup = defaultNodeGroup;
         defaultNodeGroup.linkInGroups = [defaultLinkGroup];
@@ -260,6 +260,7 @@ export const useDataSotre = defineStore('dataBase', () => {
                 if(group.children) res.children = group.children.map(child => child.id);
                 else if (group.leafData) res.children = group.leafData.map(leaf => leaf.id);
             }
+            return res;
         }
         // 没有指明ID就直接返回根节点（只包括Group，没有叶子节存储的data的id)
         const root = type === 'link' ? linkGroupRoot : nodeGroupRoot;

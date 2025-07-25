@@ -122,7 +122,7 @@ function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node"
             filteredChildren = filteredChildren.filter((dto: { id: string; }) => dto.id !== 'default');
         }
     }
-    if (filteredChildren.length == 0) {
+    if (!filteredChildren || filteredChildren.length == 0) {
         // 也就是没有子节点了，节点直接返回
         return res;
     }
