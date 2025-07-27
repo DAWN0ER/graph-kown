@@ -141,11 +141,11 @@ const selectGroupTree = computed(() => {
             return [];
         }
         const root = store.getGroup(store.current.type);
-        return convertGroup(root, 'select')[0].children;
+        return convertGroup(root, 'selectLeaf')[0].children;
     } else {
         const type = props.formMode.includes("Node") ? "node" : "link";
         const root = store.getGroup(type);
-        const res = convertGroup(root, 'select')[0].children;
+        const res = convertGroup(root, 'selectLeaf')[0].children;
         return res;
     }
 

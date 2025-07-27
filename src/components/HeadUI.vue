@@ -9,8 +9,9 @@
             </DropDownForm>
         </a-space-compact>
         <a-space-compact>
-            <a-button shape="round" type="primary">添加节点组</a-button>
-            <a-button shape="round" type="primary">添加链接组</a-button>
+            <DropDownForm :label="'添加组织'" ref="groupForm"> 
+                <GroupForm :formMode="'add'" @cancel="groupForm?.handleVisibleChange(false)"></GroupForm>
+            </DropDownForm>
         </a-space-compact>
         <a-button shape="round" type="default" @click="fileInput?.click()" :disabled="btnText !== '上传文件'">{{ btnText
         }}</a-button>
@@ -26,11 +27,13 @@ import type { Data } from '@/types/data.types';
 import { useDataSotre } from '@/stores/data';
 import DropDownForm from './DropDownForm.vue';
 import ElementForm from './ElementForm.vue';
+import GroupForm from './GroupForm.vue';
 
 const store = useDataSotre();
 
 const nodeForm = ref<InstanceType<typeof DropDownForm> | null>(null);
 const linkForm = ref<InstanceType<typeof DropDownForm> | null>(null);
+const groupForm = ref<InstanceType<typeof DropDownForm> | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const btnText = ref<string>('上传文件')
 

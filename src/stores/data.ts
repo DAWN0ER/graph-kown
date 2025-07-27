@@ -15,8 +15,8 @@ export const useDataSotre = defineStore('dataBase', () => {
     const nodeGroupMap = new Map<string, NodeGroup>();
     const linkGroupMap = new Map<string, LinkGroup>();
 
-    const nodeGroupRoot = reactive({ id: "node_group_root", children: [] as NodeGroup[] } as NodeGroup)
-    const linkGroupRoot = reactive({ id: "link_group_root", children: [] as LinkGroup[] } as LinkGroup)
+    const nodeGroupRoot = reactive({ id: "node_group_root", label:"root", description:"根节点", children: [] as NodeGroup[] } as NodeGroup)
+    const linkGroupRoot = reactive({ id: "link_group_root", label:"root", description:"根节点", children: [] as LinkGroup[] } as LinkGroup)
 
     // 初始化默认组
     {
@@ -111,7 +111,6 @@ export const useDataSotre = defineStore('dataBase', () => {
             }
         }
         console.log("loading node groups");
-        console.log(temp.nodeGroups);
         for (let ele of temp.nodeGroups) {
             const tmpNodeGroup = dfsConstructDtoFromGroup(ele, 'node',nodeGroupMap, nodeMap,undefined) as NodeGroup;
             tmpNodeGroup.parentGroup = nodeGroupRoot;

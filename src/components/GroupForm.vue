@@ -1,23 +1,29 @@
 <template>
     <div class="graph-group-form">
         <a-form :model="formData">
+            <a-form-item label="组织类型">
+                <a-radio-group v-model:value="formData.type" button-style="solid">
+                    <a-radio-button value="node">节点（node）</a-radio-button>
+                    <a-radio-button value="link">关系（link）</a-radio-button>
+                </a-radio-group>
+            </a-form-item>
             <!-- 节点特定属性 -->
-            <a-form-item label="显示名称">
+            <a-form-item label="组织名称">
                 <a-input v-model:value="formData.label" />
             </a-form-item>
             <!-- 基础信息 -->
-            <a-form-item label="描述内容">
+            <a-form-item label="组织描述描述">
                 <a-input v-model:value="formData.description" />
             </a-form-item>
             <!-- 这里是为了给出所有父节点选项，应该是个可拖拽树组件 -->
-            <a-form-item label="组织节点">
-                <!-- <a-tree-select v-model:value="formData.parentGroup" show-search style="width: 100%"
+            <a-form-item label="上级组织节点">
+                <a-tree-select v-model:value="formData.parentGroup" show-search style="width: 100%"
                     :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }" placeholder="请选择组织节点" tree-line
                     allow-clear tree-default-expand-all :tree-data="selectGroupTree">
                     <template #title="{ value: val, label }">
                         {{ label }}
                     </template>
-                </a-tree-select> -->
+                </a-tree-select>
             </a-form-item>
 
             <a-flex style="width: 100%;" :justify="'center'" gap="middle">
@@ -58,7 +64,7 @@ const props = defineProps({
     formMode: {
         type: String,
         required: true,
-        validator: (value: string) => ['add', 'edit','simpleEdit'].includes(value)
+        validator: (value: string) => ['add', 'edit', 'simpleEdit'].includes(value)
         // 对应三种模式：添加Group，修改Group（包括父节点），简单修改Group（Label 和 Description）
     },
 });
@@ -92,17 +98,17 @@ const selectGroupTree = computed(() => {
             return [];
         }
         const root = store.getGroup(store.current.type);
-        return convertGroup(root, 'select')[0].children;
+        return convertGroup(root, 'selectNotLeaf');
     } else {
         const type = props.formMode.includes("Node") ? "node" : "link";
         const root = store.getGroup(type);
-        const res = convertGroup(root, 'select')[0].children;
+        const res = convertGroup(root, 'selectNotLeaf');
         return res;
     }
 
 })
 
-const emptyData: GroupInfo ={
+const emptyData: GroupInfo = {
     type: '--',
     id: "",
     label: "",
@@ -132,7 +138,6 @@ watch(() => store.current, (newVal) => {
 const refreshFormData = () => {
     // 添加模式，生成空数据
     formData.value = JSON.parse(JSON.stringify(emptyData));
-    formData.value.type = props.formMode.includes("Node") ? 'node' : 'link';
 
     // 编辑模式，使用初始数据填充表单
     if (isEditMode.value) {
@@ -145,18 +150,18 @@ const refreshFormData = () => {
 const handleSubmit = () => {
     // 根据当前模式过滤数据
     let dataToSave: Partial<GroupInfo> = { ...formData.value };
-    
+
 };
 
 // 组件挂载时初始化表单
 onMounted(() => {
-    
-   
+
+
 });
 </script>
 
 <style scoped>
-.graph-gorup-form {
+.graph-group-form {
     padding: 10px;
     border-radius: 10px;
     margin-top: 5px;

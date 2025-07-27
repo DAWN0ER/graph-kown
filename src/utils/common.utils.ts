@@ -221,13 +221,21 @@ interface SelectGroupNode {
     children?: SelectGroupNode[];
 }
 
-function convertGroup(root: Group | null | undefined, toType: 'view' | 'select'): ViewGroupNode[] | SelectGroupNode[] {
+/**
+ * 
+ * @param root 开始转换的根节点
+ * @param toType 转换类型：view 或 select，两者的内部成员名不一样
+ * @returns 转换好的组织结构，其中 select 默认只有叶子节点可选
+ */
+function convertGroup(root: Group | null | undefined, toType: 'view' | 'selectLeaf' | 'selectNotLeaf'): ViewGroupNode[] | SelectGroupNode[] {
     if (!root) return [];
 
     if (toType === 'view') {
         return convertToViewGroup(root);
-    } else if (toType === 'select') {
-        return convertToSelectGroup(root);
+    } else if (toType === 'selectLeaf') {
+        return convertToSelectGroup(root, true);
+    } else if (toType === 'selectNotLeaf'){
+        return convertToSelectGroup(root,false);
     } else {
         throw new Error('Invalid toType. Must be "view" or "select".');
     }
@@ -261,15 +269,15 @@ function convertToViewGroup(group: Group): ViewGroupNode[] {
  * selectable: 是否可选
  * children 子节点
  */
-function convertToSelectGroup(group: Group): SelectGroupNode[] {
+function convertToSelectGroup(group: Group, selectLeaf:boolean): SelectGroupNode[] {
     const node: SelectGroupNode = {
         value: group.id,
         label: group.label || group.id,
-        selectable: group.children && group.children.length > 0 ? false : true
+        selectable: group.children && group.children.length > 0 ? !selectLeaf : selectLeaf
     };
 
     if (group.children && group.children.length > 0) {
-        node.children = group.children.map(child => convertToSelectGroup(child as Group)[0]);
+        node.children = group.children.map(child => convertToSelectGroup(child as Group,selectLeaf)[0]);
     }
 
     return [node];
