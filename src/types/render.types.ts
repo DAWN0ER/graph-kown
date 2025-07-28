@@ -1,5 +1,9 @@
 import type { NodeObject, LinkObject } from "force-graph";
 
+/**
+ * 节点视图对象
+ */
+
 export interface NodeVo extends NodeObject {
     id: string,
     viewName: string,

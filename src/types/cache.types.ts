@@ -16,6 +16,12 @@ interface LinkDto extends DataDto {
     to: NodeDto;
 }
 
+/**
+ * 树结构，三种情况：
+ * - 如果是 Leaf 节点，则有 LeafData 不为空且 children 为 undefined 或 []
+ * - 如果是非叶子节点，则 children 不为空且 leafData 为 undefined 或 []
+ * - 如果是新节点（未指定类型的新增节点），则两者均为 undefined 或 []
+ */
 interface GroupDto<D extends DataDto> {
     id: string;
     label: string;
@@ -37,10 +43,25 @@ interface NodeGroup extends GroupDto<NodeDto> {
     linkInGroups?: LinkGroup[];
 }
 
+function getGroupDtoTreeType(group: GroupDto<DataDto>): 'leaf' | 'notLeaf' | 'any' {
+    if(group.children && group.children.length > 0){
+        return 'notLeaf';
+    }
+    if(group.leafData && group.leafData.length > 0){
+        return 'leaf';
+    }
+    return 'any';
+
+}
+
 export type {
     NodeDto,
     LinkDto,
     GroupDto,
     LinkGroup,
     NodeGroup,
+}
+
+export {
+    getGroupDtoTreeType,
 }

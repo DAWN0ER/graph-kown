@@ -5,6 +5,10 @@ import type { Link, Node, Data, Group } from '@/types/data.types';
 import { convertDto2Link, convertDto2Node, convertLink2Dto, convertLinkDto2V, convertNode2Dto, convertNodeDto2V, dfsConstructDtoFromGroup, dfsConstructGroupFromDto, handleDownload } from '@/utils/common.utils';
 import type { LinkDto, LinkGroup, NodeDto, NodeGroup } from '@/types/cache.types';
 
+/**
+ * 缓存数据模型，最底层的数据结构，所有数据的最基础依赖。
+ */
+
 type DataHookFunc = (nodes: string[], links: string[]) => void
 type DataUpdateFunc = (id:string, type:'node'|'link', data:any) => void
 

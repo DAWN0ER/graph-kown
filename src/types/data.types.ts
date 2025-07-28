@@ -1,3 +1,6 @@
+/**
+ * 交互用数据结构，对外
+ */
 interface Data {
     nodes: Node[],
     links: Link[],
@@ -29,6 +32,7 @@ interface Group {
     children: Group[] | string[],
     sourceGroup?: string
     targetGroup?: string
+    treeType?: 'leaf' | 'notLeaf' | 'any'
 }
 
 export type{

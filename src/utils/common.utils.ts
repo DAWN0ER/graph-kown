@@ -1,6 +1,6 @@
 import type { Group, Node, Link } from "@/types/data.types";
 import type { NodeVo, LinkVo } from "@/types/render.types";
-import type { NodeDto, LinkDto, LinkGroup, NodeGroup, GroupDto } from "@/types/cache.types";
+import { type NodeDto, type LinkDto, type LinkGroup, type NodeGroup, type GroupDto, getGroupDtoTreeType } from "@/types/cache.types";
 
 const handleDownload = (data: any) => {
     // 将 JSON 对象转换为字符串
@@ -112,6 +112,7 @@ function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node"
         label:dto.label,
         description: dto.description,
         children: [],
+        treeType: getGroupDtoTreeType(dto),
     } as Group
 
     // 过滤默认组
@@ -130,16 +131,18 @@ function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node"
     // 递归处理 children
     let children: Group[] | string[] = [];
     // 非叶子节点
-    if (dto.children) {
+    if (res.treeType === 'notLeaf' && dto.children) {
         children = dto.children.map((dto) => dfsConstructGroupFromDto(dto, type, includeDefault, abandonLeafData));
     }
     // 叶子节点
-    else if(dto.leafData) {
+    else if(res.treeType === 'leaf' && dto.leafData) {
         if (type === 'link') {
             res.sourceGroup = (dto as LinkGroup).sourceGroup?.id;
             res.targetGroup = (dto as LinkGroup).targetGroup?.id;
         }
-        if (!abandonLeafData) children = dto.leafData.map(dto => dto.id);
+        if (!abandonLeafData) {
+            children = dto.leafData.map(dto => dto.id);
+        }
     }
     res.children = children;
     return res;
@@ -181,7 +184,7 @@ function dfsConstructDtoFromGroup(
   }
 
   // 判断是否为叶子节点（包含实际数据ID的数组）
-  const isLeaf = typeof group.children[0] === 'string';
+  const isLeaf = typeof group.children[0] === 'string' || group.treeType === 'leaf';
   
   if (isLeaf) {
     // 叶子节点，children 包含的是实际数据的 ID
@@ -206,7 +209,7 @@ function dfsConstructDtoFromGroup(
   return res;
 }
 
-export { dfsConstructDtoFromGroup };
+// 下面是用于显示的树节点转换
 
 interface ViewGroupNode {
     title: string;
@@ -222,10 +225,10 @@ interface SelectGroupNode {
 }
 
 /**
- * 
+ * 这个函数用于 dfsDto2Group 之后
  * @param root 开始转换的根节点
  * @param toType 转换类型：view 或 select，两者的内部成员名不一样
- * @returns 转换好的组织结构，其中 select 默认只有叶子节点可选
+ * @returns 转换好的组织结构，其中 select 有两种选择方式：叶子节点或者非叶子节点。
  */
 function convertGroup(root: Group | null | undefined, toType: 'view' | 'selectLeaf' | 'selectNotLeaf'): ViewGroupNode[] | SelectGroupNode[] {
     if (!root) return [];
@@ -237,7 +240,7 @@ function convertGroup(root: Group | null | undefined, toType: 'view' | 'selectLe
     } else if (toType === 'selectNotLeaf'){
         return convertToSelectGroup(root,false);
     } else {
-        throw new Error('Invalid toType. Must be "view" or "select".');
+        throw new Error('Invalid toType. toType must be "view", "selectLeaf" or "selectNotLeaf".');
     }
 }
 
@@ -273,7 +276,7 @@ function convertToSelectGroup(group: Group, selectLeaf:boolean): SelectGroupNode
     const node: SelectGroupNode = {
         value: group.id,
         label: group.label || group.id,
-        selectable: group.children && group.children.length > 0 ? !selectLeaf : selectLeaf
+        selectable: group.treeType === 'any' || (selectLeaf? (group.treeType === 'leaf' ) : (group.treeType === 'notLeaf' ))
     };
 
     if (group.children && group.children.length > 0) {
@@ -292,5 +295,6 @@ export {
     convertDto2Link,
     convertDto2Node,
     dfsConstructGroupFromDto,
+    dfsConstructDtoFromGroup,
     convertGroup,
 }
