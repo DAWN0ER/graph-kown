@@ -194,6 +194,10 @@ export const useDataSotre = defineStore('dataBase', () => {
         dealWithAdd.forEach(fn => fn([], [link.id]));
     }
 
+    const addGroup = (group: Group) => { 
+        // TODO 待完善
+    }
+
     const delNode = (id: string) => {
         const val = nodeMap.get(id);
         if (!val) return;

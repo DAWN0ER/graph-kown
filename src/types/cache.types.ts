@@ -43,15 +43,17 @@ interface NodeGroup extends GroupDto<NodeDto> {
     linkInGroups?: LinkGroup[];
 }
 
-function getGroupDtoTreeType(group: GroupDto<DataDto>): 'leaf' | 'notLeaf' | 'any' {
-    if(group.children && group.children.length > 0){
-        return 'notLeaf';
+function getGroupDtoTreeType(group: NodeGroup|LinkGroup): 'leaf' | 'notLeaf' {
+    // TODO 这里规范好数据结构之后再做
+    const verify = group as any;
+    if(verify.linkOutGroups && verify.linkInGroups && verify.leafData){
+        return 'leaf'; // Node
     }
-    if(group.leafData && group.leafData.length > 0){
-        return 'leaf';
+    if(verify.sourceGroup && verify.targetGroup && verify.leafData){
+        return 'leaf'; // Link
     }
-    return 'any';
-
+    // 先这么区分
+    return 'notLeaf';
 }
 
 export type {

@@ -1,11 +1,14 @@
 <template>
     <div class="graph-group-form">
         <a-form :model="formData">
-            <a-form-item label="组织类型">
+            <a-form-item label="所属组织">
                 <a-radio-group v-model:value="formData.type" button-style="solid">
                     <a-radio-button value="node">节点（node）</a-radio-button>
                     <a-radio-button value="link">关系（link）</a-radio-button>
                 </a-radio-group>
+            </a-form-item>
+            <a-form-item label="组织节点类型">
+                <a-switch v-model:checked="formData.isLeaf" checked-children="数据节点" un-checked-children="非数据节点" />
             </a-form-item>
             <!-- 节点特定属性 -->
             <a-form-item label="组织名称">
@@ -43,7 +46,7 @@
 
 <script setup lang="ts">
 import { useDataSotre } from '@/stores/data';
-import type { Link, Node } from '@/types/data.types';
+import type { Group, Link, Node } from '@/types/data.types';
 import { convertGroup } from '@/utils/common.utils';
 import { ref, computed, onMounted, watch } from 'vue';
 import { message } from 'ant-design-vue';
@@ -53,11 +56,21 @@ const store = useDataSotre();
 
 interface GroupInfo {
     type: "node" | "link" | "--"; // 主要是为了方便感知
+    isLeaf: boolean;
     id: string;
     label: string;
     description: string;
     parentGroup: string; // 存储父Group的id
 }
+const emptyData: GroupInfo = {
+    type: '--',
+    isLeaf: false,
+    id: "",
+    label: "",
+    description: "",
+    parentGroup: ''
+}
+
 
 const props = defineProps({
     // 当前操作模式
@@ -74,19 +87,17 @@ const emit = defineEmits<{
 }>();
 
 // 表单数据
-const formData = ref<Partial<GroupInfo>>({
+const formData = ref<GroupInfo>({
     type: "--",
+    isLeaf: false,
     id: '',
     label: '',
     description: '',
     parentGroup: '', // 存储父Group的id
 });
 
-const NodesChangeFlag = ref(0);
-
 // 计算属性：当前是否为编辑模式
 const isEditMode = computed(() => props.formMode !== 'add');
-
 
 // 计算属性：可选择组织节点
 // 如果是修改模式就需要默认展示原来的组织节点，如果是添加就默认全展开
@@ -108,13 +119,6 @@ const selectGroupTree = computed(() => {
 
 })
 
-const emptyData: GroupInfo = {
-    type: '--',
-    id: "",
-    label: "",
-    description: "",
-    parentGroup: ''
-}
 
 // 也就是为当前选择的节点计算数值
 const initialData = (type: "--" | "node" | "link", id: string): GroupInfo => {
@@ -149,14 +153,19 @@ const refreshFormData = () => {
 // 处理表单提交
 const handleSubmit = () => {
     // 根据当前模式过滤数据
-    let dataToSave: Partial<GroupInfo> = { ...formData.value };
+    let dataToSave: GroupInfo = { ...formData.value };
+    const res: Group = {
+        id: dataToSave.id,
+        label: dataToSave.label,
+        description: dataToSave.description,
+        children: [],
+    }
 
 };
 
 // 组件挂载时初始化表单
 onMounted(() => {
-
-
+    refreshFormData();
 });
 </script>
 

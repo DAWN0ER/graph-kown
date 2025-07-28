@@ -32,7 +32,6 @@ interface Group {
     children: Group[] | string[],
     sourceGroup?: string
     targetGroup?: string
-    treeType?: 'leaf' | 'notLeaf' | 'any'
 }
 
 export type{
