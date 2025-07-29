@@ -7,9 +7,6 @@
                     <a-radio-button value="link">关系（link）</a-radio-button>
                 </a-radio-group>
             </a-form-item>
-            <a-form-item label="组织节点类型">
-                <a-switch v-model:checked="formData.isLeaf" checked-children="数据节点" un-checked-children="非数据节点" />
-            </a-form-item>
             <!-- 节点特定属性 -->
             <a-form-item label="组织名称">
                 <a-input v-model:value="formData.label" />
@@ -27,6 +24,9 @@
                         {{ label }}
                     </template>
                 </a-tree-select>
+            </a-form-item>
+            <a-form-item label="是否作为数据节点">
+                <a-switch v-model:checked="formData.isLeaf" checked-children="YES" un-checked-children="NO" />
             </a-form-item>
 
             <a-flex style="width: 100%;" :justify="'center'" gap="middle">
