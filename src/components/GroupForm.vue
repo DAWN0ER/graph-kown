@@ -20,7 +20,7 @@
                 <a-tree-select v-model:value="formData.parentGroup" show-search style="width: 100%"
                     :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }" placeholder="请选择组织节点" tree-line
                     allow-clear tree-default-expand-all :tree-data="selectGroupTree">
-                    <template #title="{ value: val, label }">
+                    <template #title="{ label, selectable }">
                         {{ label }}
                     </template>
                 </a-tree-select>
@@ -111,7 +111,10 @@ const selectGroupTree = computed(() => {
         const root = store.getGroup(store.current.type);
         return convertGroup(root, 'selectNotLeaf');
     } else {
-        const type = props.formMode.includes("Node") ? "node" : "link";
+        const type = formData.value.type;
+        if(type === "--"){
+            return [];
+        }
         const root = store.getGroup(type);
         const res = convertGroup(root, 'selectNotLeaf');
         return res;
@@ -155,12 +158,17 @@ const handleSubmit = () => {
     // 根据当前模式过滤数据
     let dataToSave: GroupInfo = { ...formData.value };
     const res: Group = {
-        id: dataToSave.id,
+        id: generateUnique16BitUid(),
         label: dataToSave.label,
         description: dataToSave.description,
+        isLeaf: dataToSave.isLeaf,
         children: [],
     }
-
+    if(dataToSave.type === 'node'){
+        store.addGroup(res,"node",dataToSave.parentGroup);
+    }
+    refreshFormData();
+    emit('cancel');
 };
 
 // 组件挂载时初始化表单

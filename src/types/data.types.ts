@@ -30,8 +30,9 @@ interface Group {
     label: string,
     description: string,
     children: Group[] | string[],
-    sourceGroup?: string
-    targetGroup?: string
+    isLeaf:boolean,
+    sourceGroup?: string,
+    targetGroup?: string,
 }
 
 export type{

@@ -3,14 +3,14 @@ import { defineStore } from 'pinia'
 import type { LinkVo, NodeVo } from '@/types/render.types';
 import type { Link, Node, Data, Group } from '@/types/data.types';
 import { convertDto2Link, convertDto2Node, convertLink2Dto, convertLinkDto2V, convertNode2Dto, convertNodeDto2V, dfsConstructDtoFromGroup, dfsConstructGroupFromDto, handleDownload } from '@/utils/common.utils';
-import type { LinkDto, LinkGroup, NodeDto, NodeGroup } from '@/types/cache.types';
+import { isGroupDtoLeaf, type LinkDto, type LinkGroup, type NodeDto, type NodeGroup } from '@/types/cache.types';
 
 /**
  * 缓存数据模型，最底层的数据结构，所有数据的最基础依赖。
  */
 
 type DataHookFunc = (nodes: string[], links: string[]) => void
-type DataUpdateFunc = (id:string, type:'node'|'link', data:any) => void
+type DataUpdateFunc = (id: string, type: 'node' | 'link', data: any) => void
 
 export const useDataSotre = defineStore('dataBase', () => {
 
@@ -19,8 +19,8 @@ export const useDataSotre = defineStore('dataBase', () => {
     const nodeGroupMap = new Map<string, NodeGroup>();
     const linkGroupMap = new Map<string, LinkGroup>();
 
-    const nodeGroupRoot = reactive({ id: "node_group_root", label:"root", description:"根节点", children: [] as NodeGroup[] } as NodeGroup)
-    const linkGroupRoot = reactive({ id: "link_group_root", label:"root", description:"根节点", children: [] as LinkGroup[] } as LinkGroup)
+    const nodeGroupRoot = reactive({ id: "node_group_root", label: "root", description: "根节点", children: [] as NodeGroup[] } as NodeGroup)
+    const linkGroupRoot = reactive({ id: "link_group_root", label: "root", description: "根节点", children: [] as LinkGroup[] } as LinkGroup)
 
     // 初始化默认组
     {
@@ -68,7 +68,7 @@ export const useDataSotre = defineStore('dataBase', () => {
                 node.linksOut = [];
                 tmpO.forEach(l => changeLink(l, "del"));
                 const idx = nodeGroupMap.get(node.group)?.leafData?.findIndex(n => n.id === node.id);
-                if(idx) nodeGroupMap.get(node.group)?.leafData?.splice(idx, 1);
+                if (idx) nodeGroupMap.get(node.group)?.leafData?.splice(idx, 1);
                 break;
         }
     }
@@ -86,7 +86,7 @@ export const useDataSotre = defineStore('dataBase', () => {
                 link.to.linksIn.splice(link.to.linksIn.findIndex(e => e.id === link.id), 1);
                 link.from.linksOut.splice(link.from.linksOut.findIndex(e => e.id === link.id), 1);
                 const idx = linkGroupMap.get(link.group)?.leafData?.findIndex(l => l.id === link.id);
-                if(idx) linkGroupMap.get(link.group)?.leafData?.splice(idx, 1);
+                if (idx) linkGroupMap.get(link.group)?.leafData?.splice(idx, 1);
                 break;
         }
     }
@@ -116,13 +116,13 @@ export const useDataSotre = defineStore('dataBase', () => {
         }
         console.log("loading node groups");
         for (let ele of temp.nodeGroups) {
-            const tmpNodeGroup = dfsConstructDtoFromGroup(ele, 'node',nodeGroupMap, nodeMap,undefined) as NodeGroup;
+            const tmpNodeGroup = dfsConstructDtoFromGroup(ele, 'node', nodeGroupMap, nodeMap, undefined) as NodeGroup;
             tmpNodeGroup.parentGroup = nodeGroupRoot;
             (nodeGroupRoot.children as NodeGroup[]).push(tmpNodeGroup);
         }
         console.log("loading link groups");
         for (let ele of temp.linkGroups) {
-            const tmpLinkGroup = dfsConstructDtoFromGroup(ele, 'link', linkGroupMap,undefined, linkMap) as LinkGroup;
+            const tmpLinkGroup = dfsConstructDtoFromGroup(ele, 'link', linkGroupMap, undefined, linkMap) as LinkGroup;
             tmpLinkGroup.parentGroup = linkGroupRoot;
             linkGroupMap.set(tmpLinkGroup.id, tmpLinkGroup);
             (linkGroupRoot.children as LinkGroup[]).push(tmpLinkGroup);
@@ -176,11 +176,11 @@ export const useDataSotre = defineStore('dataBase', () => {
         }
     }
 
-    const registerUpdateHook = (fn: DataUpdateFunc) => { 
+    const registerUpdateHook = (fn: DataUpdateFunc) => {
         dealWithUpdate.add(fn);
     }
 
-    const unregisterUpdateHook = (fn: DataUpdateFunc) => { 
+    const unregisterUpdateHook = (fn: DataUpdateFunc) => {
         dealWithUpdate.delete(fn);
     }
 
@@ -194,8 +194,33 @@ export const useDataSotre = defineStore('dataBase', () => {
         dealWithAdd.forEach(fn => fn([], [link.id]));
     }
 
-    const addGroup = (group: Group) => { 
-        // TODO 待完善
+    const addGroup = (group: Group, typeStr: "node" | "link", mountNode: string) => {
+        const map = typeStr === "node" ? nodeGroupMap : linkGroupMap;
+        const root = typeStr === "node" ? nodeGroupRoot : linkGroupRoot;
+        const tmp: any = {
+            id: group.id,
+            label: group.label,
+            description: group.description,
+            parentGroup: root.id === mountNode ? root : map.get(mountNode)
+        };
+        if (!group.isLeaf) {
+            tmp.children = [];
+        } else {
+            tmp.leafData = [];
+            if (typeStr === "link") {
+                if (!group.sourceGroup || !group.targetGroup) {
+                    throw new Error("LinkGroup must have sourceGroup and targetGroup");
+                }
+                tmp.sourceGroup = map.get(group.sourceGroup);
+                tmp.targetGroup = map.get(group.targetGroup);
+            } else { 
+                tmp.linkOutGroups = [];
+                tmp.linkInGroups = [];
+            }
+        }
+        map.set(tmp.id, tmp);
+        console.log(group,mountNode,tmp.parentGroup);
+        tmp.parentGroup.children.push(tmp);
     }
 
     const delNode = (id: string) => {
@@ -215,19 +240,19 @@ export const useDataSotre = defineStore('dataBase', () => {
     }
 
     // 这里的 data 暂定只包括：viewName（node）, content, labels（开发中）
-    const editData = (id: string, type: "node" | "link", data: any) => { 
-        if(type === "node"){
+    const editData = (id: string, type: "node" | "link", data: any) => {
+        if (type === "node") {
             const n = nodeMap.get(id) as NodeDto;
             console.log(n);
-            if(data.viewName) n.viewName = data.viewName;
-            if(data.content) n.content = data.content;
-            if(data.labels) n.labels = data.labels;
+            if (data.viewName) n.viewName = data.viewName;
+            if (data.content) n.content = data.content;
+            if (data.labels) n.labels = data.labels;
         } else {
             const l = linkMap.get(id) as LinkDto;
-            if(data.content) l.content = data.content;
-            if(data.labels) l.labels = data.labels;
+            if (data.content) l.content = data.content;
+            if (data.labels) l.labels = data.labels;
         }
-        dealWithUpdate.forEach(fn => fn(id,type,data));
+        dealWithUpdate.forEach(fn => fn(id, type, data));
     }
 
     // 这里面的所有 get 方法都需要加上 undifine 的
@@ -247,6 +272,13 @@ export const useDataSotre = defineStore('dataBase', () => {
         return convertDto2Link(linkMap.get(id) as LinkDto);
     }
 
+    /**
+     * 返回一个 Group 信息
+     * @param type "link" | "node"
+     * @param id group Id 可选，没有Id的时候默认返回 root
+     * @param withChlidren 是否携带子节点的 Id 列表
+     * @returns Group 对象
+     */
     const getGroup = (type: 'link' | 'node', id?: string, withChlidren?: boolean): Group => {
         // 如果携带ID也是默认不返回 children 的，需要完整组织节点请返回 root 然后自己查找
         if (id) {
@@ -261,10 +293,11 @@ export const useDataSotre = defineStore('dataBase', () => {
                 description: group.description,
                 sourceGroup: (group as any)?.sourceGroup?.id,
                 targetGroup: (group as any)?.targetGroup?.id,
-                children:[] as string[],
+                isLeaf: isGroupDtoLeaf(group),
+                children: [] as string[],
             }
-            if(withChlidren){
-                if(group.children) res.children = group.children.map(child => child.id);
+            if (withChlidren) {
+                if (group.children) res.children = group.children.map(child => child.id);
                 else if (group.leafData) res.children = group.leafData.map(leaf => leaf.id);
             }
             return res;
@@ -282,6 +315,7 @@ export const useDataSotre = defineStore('dataBase', () => {
         delLink,
         delNode,
         editData,
+        addGroup,
         //Read
         getNodeV,
         getLinkV,

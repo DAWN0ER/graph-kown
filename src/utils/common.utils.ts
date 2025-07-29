@@ -1,6 +1,6 @@
 import type { Group, Node, Link } from "@/types/data.types";
 import type { NodeVo, LinkVo } from "@/types/render.types";
-import { type NodeDto, type LinkDto, type LinkGroup, type NodeGroup, type GroupDto, getGroupDtoTreeType } from "@/types/cache.types";
+import { type NodeDto, type LinkDto, type LinkGroup, type NodeGroup, type GroupDto, isGroupDtoLeaf } from "@/types/cache.types";
 
 const handleDownload = (data: any) => {
     // 将 JSON 对象转换为字符串
@@ -105,14 +105,14 @@ const convertDto2Link = (dto: LinkDto): Link => {
  * @param abandonLeafData 是否抛弃叶子节点的leafData数据
  * @returns 
  */
-function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node" | "link",
+function dfsConstructGroupFromDto(dto: NodeGroup|LinkGroup, type: "node" | "link",
     includeDefault?: boolean, abandonLeafData?: boolean): Group {
     const res = {
         id: dto.id,
         label:dto.label,
         description: dto.description,
         children: [],
-        treeType: getGroupDtoTreeType(dto),
+        isLeaf: isGroupDtoLeaf(dto),
     } as Group
 
     // 过滤默认组
@@ -131,11 +131,11 @@ function dfsConstructGroupFromDto(dto: GroupDto<LinkDto | NodeDto>, type: "node"
     // 递归处理 children
     let children: Group[] | string[] = [];
     // 非叶子节点
-    if (res.treeType === 'notLeaf' && dto.children) {
+    if (!res.isLeaf && dto.children) {
         children = dto.children.map((dto) => dfsConstructGroupFromDto(dto, type, includeDefault, abandonLeafData));
     }
     // 叶子节点
-    else if(res.treeType === 'leaf' && dto.leafData) {
+    else if(res.isLeaf && dto.leafData) {
         if (type === 'link') {
             res.sourceGroup = (dto as LinkGroup).sourceGroup?.id;
             res.targetGroup = (dto as LinkGroup).targetGroup?.id;
@@ -182,11 +182,9 @@ function dfsConstructDtoFromGroup(
   if (!group.children || group.children.length === 0) {
     return res;
   }
-
   // 判断是否为叶子节点（包含实际数据ID的数组）
-  const isLeaf = typeof group.children[0] === 'string' || group.treeType === 'leaf';
   
-  if (isLeaf) {
+  if (group.isLeaf) {
     // 叶子节点，children 包含的是实际数据的 ID
     if (type === "node" && nodeMap) {
       res.leafData = group.children
@@ -276,7 +274,7 @@ function convertToSelectGroup(group: Group, selectLeaf:boolean): SelectGroupNode
     const node: SelectGroupNode = {
         value: group.id,
         label: group.label || group.id,
-        selectable: group.treeType === 'any' || (selectLeaf? (group.treeType === 'leaf' ) : (group.treeType === 'notLeaf' ))
+        selectable: selectLeaf? group.isLeaf : !group.isLeaf
     };
 
     if (group.children && group.children.length > 0) {
