@@ -40,8 +40,13 @@ export const useDataSotre = defineStore('dataBase', () => {
     const dealWithDel: Set<DataHookFunc> = new Set();
     const dealWithUpdate: Set<DataUpdateFunc> = new Set();
 
-    // 这里是观测状态变更用的计数器，只允许在 loadData 的时候用
+    // 这里是观测渲染视图变更用的计数器
+    // Decrepeted
     const change = ref<number>(0);
+
+    // LinkGroup 链，要求 TargetGroup 和 SourceGroup 存在且一致
+    // 如果为空数组，则默认渲染所有节点。
+    const renderPath:string[] = [];
 
     interface CurrentInfo {
         type: "--" | "node" | "link";
@@ -147,6 +152,7 @@ export const useDataSotre = defineStore('dataBase', () => {
 
     }
 
+    // 全节点渲染视图加载
     const initGraphData = () => {
         return {
             ns: Array.from(nodeMap.values()).map(convertNodeDto2V),
@@ -308,6 +314,19 @@ export const useDataSotre = defineStore('dataBase', () => {
         return res;
     }
 
+    /**
+     * 返回可用的 link group
+     * @param path node group id
+     * @returns 
+     */
+    const getNextAvailablePath = (node: string): {id:string, name:string}[] => { 
+        return [];
+    }
+
+    const updateRenderPath = (paths:string[]): void => { 
+
+    }
+
     return {
         // Write
         addLink,
@@ -316,6 +335,7 @@ export const useDataSotre = defineStore('dataBase', () => {
         delNode,
         editData,
         addGroup,
+
         //Read
         getNodeV,
         getLinkV,
